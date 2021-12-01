@@ -2,9 +2,15 @@ from typing import Optional, Sequence
 
 from tabulate import tabulate
 
+from aoc21.days import day01
+from aoc21.problem import Problem
+
 
 HEADERS = ("Problem", "Solution", "Elapsed")
-PROBLEMS = []
+PROBLEMS = [
+    Problem(1, 1, day01.part1),
+    Problem(1, 2, day01.part2),
+]
 
 
 def run(days: Optional[Sequence[int]] = None):
