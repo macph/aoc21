@@ -4,8 +4,12 @@ version = "0.1.0"
 description = "Run Advent of Code 2021 solutions."
 authors = ["macph <macph@users.noreply.github.com>"]
 
+[tool.poetry.scripts]
+aoc21 = "aoc21.main:main"
+
 [tool.poetry.dependencies]
 python = "^3.9"
+tabulate = "^0.8.9"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
