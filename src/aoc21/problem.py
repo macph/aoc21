@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from time import perf_counter_ns
 from typing import Callable
 
 
@@ -13,13 +12,6 @@ class Problem:
     part: int
     solver: Callable[[], object]
 
-    def solve(self) -> "Solution":
-        start = perf_counter_ns()
-        solution = self.solver()
-        end = perf_counter_ns()
-
-        return Solution(self, solution, end - start)
-
 
 @dataclass
 class Solution:
@@ -29,22 +21,23 @@ class Solution:
 
     problem: Problem
     solution: object
-    elapsed_ns: int
+    elapsed_s: float
+    runs: int
 
     @property
     def elapsed(self) -> str:
-        return _format_elapsed(self.elapsed_ns)
+        return _format_elapsed(self.elapsed_s)
 
 
-def _format_elapsed(nanoseconds: int) -> str:
-    if nanoseconds < 10_000:
-        return f"{nanoseconds} ns"
-    elif nanoseconds < 10_000_000:
-        microseconds = nanoseconds / 1000
-        return f"{microseconds:.1f} µs"
-    elif nanoseconds < 10_000_000_000:
-        milliseconds = nanoseconds / 1_000_000
-        return f"{milliseconds:.1f} ms"
-    else:
-        seconds = nanoseconds / 1_000_000_000
+def _format_elapsed(seconds: float) -> str:
+    if seconds >= 10.0:
         return f"{seconds:.1f} s"
+    elif seconds >= 1e-2:
+        milliseconds = seconds * 1e3
+        return f"{milliseconds:.1f} ms"
+    elif seconds >= 1e-5:
+        microseconds = seconds * 1e6
+        return f"{microseconds:.1f} µs"
+    else:
+        nanoseconds = seconds * 1e9
+        return f"{nanoseconds} ns"
