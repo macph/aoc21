@@ -1,8 +1,10 @@
+from concurrent.futures import ProcessPoolExecutor
 from logging import getLogger, Formatter, INFO, StreamHandler
+from os import linesep
 from sys import stderr
 from time import perf_counter
 from timeit import Timer
-from typing import Optional, Sequence
+from typing import Any, Collection, Iterable, List, Optional
 
 from tabulate import tabulate
 
@@ -10,7 +12,7 @@ from aoc21.problem import Problem, Solution
 from aoc21.days import PROBLEMS
 
 
-HEADERS = ("Problem", "Solution", "Elapsed", "Runs")
+HEADERS = ("Day", "Solution", "Elapsed", "Runs")
 
 
 logger = getLogger("aoc21")
@@ -23,61 +25,75 @@ _handler.setFormatter(_formatter)
 logger.addHandler(_handler)
 
 
-def run(days: Optional[Sequence[int]] = None, benchmark: bool = False) -> bool:
+def run(days: Optional[Collection[int]] = None, benchmark: bool = False) -> bool:
     """
-    Run solvers for problems and print the solutions.
+    Run solves for all days after filtering and print solutions.
 
-    :param days: The days to select, or None to run them all.
+    :param days: Days to solve for, or None to solve all of them.
     :param benchmark: Whether to run the solvers repeatedly to obtain a more accurate
     execution time.
     :return: True if no exceptions occurred during solving, False otherwise.
     """
 
-    solutions = []
-    rows = []
-
+    problems = []
     for problem in PROBLEMS:
-        if days is not None and problem.day not in days:
-            logger.info("Skipping day %d, part %d.", problem.day, problem.part)
-            continue
-
-        solution = _solve(problem, benchmark)
-        solutions.append(solution)
-
-        name = f"{solution.problem.day}.{solution.problem.part}"
-        if solution.exception is None:
-            value = solution.value
+        if days is None or problem.day in days:
+            problems.append(problem)
         else:
-            value = solution.exception.__class__.__name__
+            logger.info("Skipping day %d, part %d.", problem.day, problem.part)
 
-        rows.append([name, value, solution.elapsed, solution.runs])
+    if not problems:
+        print("", "No matching problems found.", "", sep=linesep)
+        return True
 
-    print()
+    solutions = execute(problems, None, benchmark)
+    solutions.sort(key=lambda s: (s.problem.day, s.problem.part))
 
-    if rows:
-        table = tabulate(
-            rows, HEADERS, tablefmt="pipe", numalign="right", stralign="right"
-        )
-        print(table)
-    else:
-        print("No matching problems found.")
-
-    print()
+    table = tabulate(
+        map(_solution_as_row, solutions),
+        HEADERS,
+        tablefmt="pipe",
+        numalign="right",
+        stralign="right",
+    )
+    print("", table, "", sep=linesep)
 
     return all(s.exception is None for s in solutions)
 
 
-def _solve(problem: Problem, benchmark: bool = False) -> Solution:
-    if benchmark:
-        return _time_runs(problem)
+def execute(
+    problems: Iterable[Problem], workers: Optional[int] = None, benchmark: bool = False
+) -> List[Solution]:
+    """
+    Run solvers for problems and print the solutions.
+
+    :param problems: Sequence of problems to solve.
+    :param workers: Number of workers to run solvers in parallel.
+    :param benchmark: Whether to run the solvers repeatedly to obtain a more accurate
+    execution time.
+    :return: True if no exceptions occurred during solving, False otherwise.
+    """
+
+    solve = _solve_timed if benchmark else _solve_once
+    with ProcessPoolExecutor(workers) as pool:
+        return list(pool.map(solve, problems))
+
+
+def _solution_as_row(solution: Solution) -> List[Any]:
+    name = f"{solution.problem.day}.{solution.problem.part}"
+    if solution.exception is None:
+        value = solution.value
     else:
-        return _run_once(problem)
+        value = solution.exception.__class__.__name__
+
+    return [name, value, solution.elapsed, solution.runs]
 
 
-def _run_once(problem: Problem) -> Solution:
+def _solve_once(problem: Problem) -> Solution:
     # Run solver once.
     logger.info("Solving day %d, part %d...", problem.day, problem.part)
     start = perf_counter()
+
     try:
         value = problem.solver()
     except Exception as e:
@@ -93,9 +109,9 @@ def _run_once(problem: Problem) -> Solution:
     return Solution(problem, value, exception, elapsed, 1)
 
 
-def _time_runs(problem: Problem) -> Solution:
+def _solve_timed(problem: Problem) -> Solution:
     # Run solver initially to get solution and catch any errors.
-    initial = _run_once(problem)
+    initial = _solve_once(problem)
 
     if initial.exception is not None:
         # An exception has occurred during initial execution so skip any benchmarking.
