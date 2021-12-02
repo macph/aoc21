@@ -1,13 +1,14 @@
 from argparse import ArgumentParser
-from sys import argv
 from typing import Optional, Sequence
 
 from aoc21.runner import run
 
 
-def main(args: Optional[Sequence[str]] = None):
+def main_fn(args: Optional[Sequence[str]] = None) -> int:
     """
-    The entrypoint.
+    Parse arguments and run solvers.
+    :param args: The command line arguments.
+    :return: The exit code.
     """
 
     parser = ArgumentParser(description="Run solvers for Advent of Code 2021 problems.")
@@ -21,8 +22,18 @@ def main(args: Optional[Sequence[str]] = None):
     )
 
     namespace = parser.parse_args(args)
-    run(namespace.days or None, namespace.benchmark)
+    result = run(namespace.days or None, namespace.benchmark)
+
+    return 0 if result else 1
+
+
+def main():
+    """
+    The entrypoint.
+    """
+
+    exit(main_fn())
 
 
 if __name__ == "__main__":
-    main(argv)
+    main()

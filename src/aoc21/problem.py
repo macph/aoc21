@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Optional
 
 
 @dataclass
@@ -20,7 +20,8 @@ class Solution:
     """
 
     problem: Problem
-    solution: object
+    value: object
+    exception: Optional[Exception]
     elapsed_s: float
     runs: int
 
@@ -40,4 +41,4 @@ def _format_elapsed(seconds: float) -> str:
         return f"{microseconds:.1f} µs"
     else:
         nanoseconds = seconds * 1e9
-        return f"{nanoseconds} ns"
+        return f"{nanoseconds:.1f} ns"

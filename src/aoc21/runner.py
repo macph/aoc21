@@ -23,16 +23,18 @@ _handler.setFormatter(_formatter)
 logger.addHandler(_handler)
 
 
-def run(days: Optional[Sequence[int]] = None, benchmark: bool = False):
+def run(days: Optional[Sequence[int]] = None, benchmark: bool = False) -> bool:
     """
     Run solvers for problems and print the solutions.
 
     :param days: The days to select, or None to run them all.
     :param benchmark: Whether to run the solvers repeatedly to obtain a more accurate
     execution time.
+    :return: True if no exceptions occurred during solving, False otherwise.
     """
 
     solutions = []
+    rows = []
 
     for problem in PROBLEMS:
         if days is not None and problem.day not in days:
@@ -42,10 +44,13 @@ def run(days: Optional[Sequence[int]] = None, benchmark: bool = False):
         solution = _solve(problem, benchmark)
         solutions.append(solution)
 
-    rows = [
-        [f"{s.problem.day}.{s.problem.part}", s.solution, s.elapsed, s.runs]
-        for s in solutions
-    ]
+        name = f"{solution.problem.day}.{solution.problem.part}"
+        if solution.exception is None:
+            value = solution.value
+        else:
+            value = solution.exception.__class__.__name__
+
+        rows.append([name, value, solution.elapsed, solution.runs])
 
     print()
 
@@ -59,6 +64,8 @@ def run(days: Optional[Sequence[int]] = None, benchmark: bool = False):
 
     print()
 
+    return all(s.exception is None for s in solutions)
+
 
 def _solve(problem: Problem, benchmark: bool = False) -> Solution:
     if benchmark:
@@ -71,18 +78,28 @@ def _run_once(problem: Problem) -> Solution:
     # Run solver once.
     logger.info("Solving day %d, part %d...", problem.day, problem.part)
     start = perf_counter()
-    solution = problem.solver()
-    end = perf_counter()
+    try:
+        value = problem.solver()
+    except Exception as e:
+        logger.error("Day %d, part %d failed.", problem.day, problem.part, exc_info=e)
+        value = None
+        exception = e
+    else:
+        exception = None
 
+    end = perf_counter()
     elapsed = end - start
 
-    return Solution(problem, solution, elapsed, 1)
+    return Solution(problem, value, exception, elapsed, 1)
 
 
 def _time_runs(problem: Problem) -> Solution:
     # Run solver initially to get solution and catch any errors.
-    logger.info("Solving day %d, part %d...", problem.day, problem.part)
-    solution = problem.solver()
+    initial = _run_once(problem)
+
+    if initial.exception is not None:
+        # An exception has occurred during initial execution so skip any benchmarking.
+        return initial
 
     timer = Timer(problem.solver)
 
@@ -102,4 +119,4 @@ def _time_runs(problem: Problem) -> Solution:
     results = timer.repeat(repeat, runs)
     elapsed = min(results) / runs
 
-    return Solution(problem, solution, elapsed, runs)
+    return Solution(problem, initial.value, None, elapsed, runs)
