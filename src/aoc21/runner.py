@@ -25,11 +25,16 @@ _handler.setFormatter(_formatter)
 logger.addHandler(_handler)
 
 
-def run(days: Optional[Collection[int]] = None, benchmark: bool = False) -> bool:
+def run(
+    days: Optional[Collection[int]] = None,
+    parallel: bool = True,
+    benchmark: bool = False,
+) -> bool:
     """
     Run solves for all days after filtering and print solutions.
 
     :param days: Days to solve for, or None to solve all of them.
+    :param parallel: Whether to run the solvers in parallel with multiple processes.
     :param benchmark: Whether to run the solvers repeatedly to obtain a more accurate
     execution time.
     :return: True if no exceptions occurred during solving, False otherwise.
@@ -46,7 +51,7 @@ def run(days: Optional[Collection[int]] = None, benchmark: bool = False) -> bool
         print("", "No matching problems found.", "", sep=linesep)
         return True
 
-    solutions = execute(problems, None, benchmark)
+    solutions = execute(problems, parallel, benchmark)
     solutions.sort(key=lambda s: (s.problem.day, s.problem.part))
 
     table = tabulate(
@@ -62,21 +67,26 @@ def run(days: Optional[Collection[int]] = None, benchmark: bool = False) -> bool
 
 
 def execute(
-    problems: Iterable[Problem], workers: Optional[int] = None, benchmark: bool = False
+    problems: Iterable[Problem],
+    parallel: bool = True,
+    benchmark: bool = False,
 ) -> List[Solution]:
     """
     Run solvers for problems and print the solutions.
 
     :param problems: Sequence of problems to solve.
-    :param workers: Number of workers to run solvers in parallel.
+    :param parallel: Whether to run the solvers in parallel with multiple processes.
     :param benchmark: Whether to run the solvers repeatedly to obtain a more accurate
     execution time.
     :return: True if no exceptions occurred during solving, False otherwise.
     """
 
     solve = _solve_timed if benchmark else _solve_once
-    with ProcessPoolExecutor(workers) as pool:
-        return list(pool.map(solve, problems))
+    if parallel:
+        with ProcessPoolExecutor() as pool:
+            return list(pool.map(solve, problems))
+    else:
+        return list(map(solve, problems))
 
 
 def _solution_as_row(solution: Solution) -> List[Any]:
