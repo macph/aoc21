@@ -11,6 +11,7 @@ from aoc21.days import (
     day10,
     day11,
     day12,
+    day13,
 )
 from aoc21.problem import Problem
 
@@ -39,4 +40,6 @@ PROBLEMS = [
     Problem(11, 2, day11.part2),
     Problem(12, 1, day12.part1),
     Problem(12, 2, day12.part2),
+    Problem(13, 1, day13.part1),
+    Problem(13, 2, day13.part2),
 ]
