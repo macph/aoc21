@@ -1,7 +1,11 @@
 from enum import Enum
-from functools import reduce
 from importlib.resources import open_text
+from logging import getLogger
+from os import linesep
 from typing import AbstractSet, Iterable, Iterator, List, NamedTuple, Set, Tuple
+
+
+logger = getLogger("aoc21.days.day13")
 
 
 class Dot(NamedTuple):
@@ -61,7 +65,7 @@ class Paper(AbstractSet[Dot]):
         for d in self:
             table[d.y][d.x] = "#"
 
-        return "\n".join("".join(r) for r in table)
+        return linesep.join("".join(r) for r in table)
 
     def fold(self, instruction: FoldInstruction) -> "Paper":
         if instruction.fold == Fold.X:
@@ -130,6 +134,6 @@ def part2() -> object:
         folded = folded.fold(i)
 
     # TODO: Implement some sort of OCR?
-    # print(folded.to_string())
+    logger.info("Output from folding:\n%s", folded.to_string())
 
     return "HZLEHJRK"
