@@ -1,28 +1,20 @@
 from concurrent.futures import ProcessPoolExecutor
-from logging import getLogger, Formatter, INFO, StreamHandler
+from logging import getLogger
 from os import linesep
-from sys import stderr
 from time import perf_counter
 from timeit import Timer
 from typing import Any, Collection, Iterable, List, Optional
 
 from tabulate import tabulate
 
-from aoc21.problem import Problem, Solution
 from aoc21.days import PROBLEMS
+from aoc21.problem import Problem
+from aoc21.solution import Solution
 
 
 HEADERS = ("Day", "Solution", "Elapsed", "Runs")
 
-
 logger = getLogger("aoc21")
-logger.setLevel(INFO)
-
-_handler = StreamHandler(stderr)
-_formatter = Formatter("%(message)s")
-_handler.setFormatter(_formatter)
-
-logger.addHandler(_handler)
 
 
 def run(

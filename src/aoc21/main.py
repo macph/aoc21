@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from typing import Optional, Sequence
 
+from aoc21.log import setup_logging
 from aoc21.runner import run
 
 
@@ -27,9 +28,27 @@ def main_fn(args: Optional[Sequence[str]] = None) -> int:
         action="store_true",
         help="Benchmark solvers in addition to running them.",
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbosity",
+        action="count",
+        default=0,
+        help="Set verbosity level."
+    )
 
     namespace = parser.parse_args(args)
-    result = run(namespace.days or None, not namespace.sequential, namespace.benchmark)
+
+    days = namespace.days or None
+    parallel = not namespace.sequential
+    benchmark = namespace.benchmark
+    verbosity = namespace.verbosity
+
+    if verbosity >= 2 and benchmark:
+        parser.error("verbosity (-v) >= 2 is not compatible with benchmarking (-b).")
+
+    setup_logging(verbosity)
+    result = run(days, parallel, benchmark)
 
     return 0 if result else 1
 
